@@ -23,6 +23,14 @@ fn computeFoo(
         .control => 3,
         else => 10,
     };
+    if (@hasField(@TypeOf(data.*), "bar_unused")) {
+        data.bar_unused = switch (data.original_grapheme_break) {
+            .other => 0,
+            .prepend => 1,
+            .extend => 4,
+            else => 255,
+        };
+    }
 }
 
 const foo = config.Extension{
@@ -30,6 +38,7 @@ const foo = config.Extension{
     .compute = &computeFoo,
     .fields = &.{
         .{ .name = "foo", .type = u8 },
+        .{ .name = "bar_unused", .type = u8 },
     },
 };
 
