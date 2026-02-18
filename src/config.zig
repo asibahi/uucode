@@ -297,6 +297,9 @@ pub const default = Table{
 
         // Indic Positional Category
         .{ .name = "indic_positional_category", .type = types.IndicPositionalCategory },
+
+        // Indic Syllabic Category
+        .{ .name = "indic_syllabic_category", .type = types.IndicSyllabicCategory },
     },
 };
 

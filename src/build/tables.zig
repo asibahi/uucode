@@ -942,6 +942,12 @@ pub fn writeTableData(
             a.indic_positional_category = ipc;
         }
 
+        // Indic Syllabic Category
+        if (@hasField(AllData, "indic_syllabic_category")) {
+            const ipc = ucd.indic_syllabic_category[cp];
+            a.indic_syllabic_category = ipc;
+        }
+
         // OriginalGraphemeBreak
         if (@hasField(AllData, "original_grapheme_break")) {
             const original_grapheme_break = ucd.original_grapheme_break[cp];

@@ -834,6 +834,46 @@ pub const IndicPositionalCategory = enum(u4) {
     overstruck,
 };
 
+pub const IndicSyllabicCategory = enum(u6) {
+    other,
+    bindu,
+    visarga,
+    avagraha,
+    nukta,
+    virama,
+    pure_killer,
+    reordering_killer,
+    invisible_stacker,
+    vowel_independent,
+    vowel_dependent,
+    vowel,
+    consonant_placeholder,
+    consonant,
+    consonant_dead,
+    consonant_with_stacker,
+    consonant_prefixed,
+    consonant_preceding_repha,
+    consonant_initial_postfixed,
+    consonant_succeeding_repha,
+    consonant_subjoined,
+    consonant_medial,
+    consonant_final,
+    consonant_head_letter,
+    modifying_letter,
+    tone_letter,
+    tone_mark,
+    gemination_mark,
+    cantillation_mark,
+    register_shifter,
+    syllable_modifier,
+    consonant_killer,
+    non_joiner,
+    joiner,
+    number_joiner,
+    number,
+    brahmi_joining_number,
+};
+
 // The following types are internal to `uucode`:
 
 pub fn Field(comptime c: config.Field, comptime packing: config.Table.Packing) type {

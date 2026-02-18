@@ -26,7 +26,7 @@ joining_types: []types.JoiningType = undefined,
 joining_groups: []types.JoiningGroup = undefined,
 is_composition_exclusions: []bool = undefined,
 indic_positional_category: []types.IndicPositionalCategory = undefined,
-// indic_syllabic_category: []types.IndicSyllabicCategory = undefined,
+indic_syllabic_category: []types.IndicSyllabicCategory = undefined,
 
 const Self = @This();
 
@@ -130,6 +130,7 @@ const field_to_sections = std.StaticStringMap([]const UcdSection).initComptime(.
     .{ "joining_group", &.{.joining_groups} },
     .{ "is_composition_exclusion", &.{.is_composition_exclusions} },
     .{ "indic_positional_category", &.{.indic_positional_category} },
+    .{ "indic_syllabic_category", &.{.indic_syllabic_category} },
 });
 
 fn fieldNeedsSection(comptime field: []const u8, comptime ucd_section: UcdSection) bool {
@@ -220,6 +221,11 @@ pub fn init(allocator: std.mem.Allocator, comptime table_configs: []const config
     if (comptime needsSectionAny(table_configs, .indic_positional_category)) {
         self.indic_positional_category = try allocator.alloc(types.IndicPositionalCategory, n);
         try parseIndicPositionalCategory(allocator, self.indic_positional_category);
+    }
+
+    if (comptime needsSectionAny(table_configs, .indic_syllabic_category)) {
+        self.indic_syllabic_category = try allocator.alloc(types.IndicSyllabicCategory, n);
+        try parseIndicSyllabicCategory(allocator, self.indic_syllabic_category);
     }
 
     const end = try std.time.Instant.now();
@@ -2101,4 +2107,84 @@ const indic_positional_category_map = std.StaticStringMap(types.IndicPositionalC
     .{ "Top_And_Bottom_And_Right", .top_and_bottom_and_right },
     .{ "Top_And_Bottom_And_Left", .top_and_bottom_and_left },
     .{ "Overstruck", .overstruck },
+});
+
+fn parseIndicSyllabicCategory(
+    allocator: std.mem.Allocator,
+    indic_syllabic_category: []types.IndicSyllabicCategory,
+) !void {
+    @memset(indic_syllabic_category, .other);
+
+    const file_path = "ucd/IndicSyllabicCategory.txt";
+
+    const file = try std.fs.cwd().openFile(file_path, .{});
+    defer file.close();
+
+    const content = try file.readToEndAlloc(allocator, 1024 * 1024);
+    defer allocator.free(content);
+
+    var lines = std.mem.splitScalar(u8, content, '\n');
+    while (lines.next()) |line| {
+        const trimmed = trim(line);
+        if (trimmed.len == 0) continue;
+
+        var parts = std.mem.splitScalar(u8, trimmed, ';');
+        const cp_str = std.mem.trim(u8, parts.next().?, " \t\r");
+        const isc_str = std.mem.trim(u8, parts.next().?, " \t\r");
+
+        const range = try parseRange(cp_str);
+        const ipc = indic_syllabic_category_map.get(isc_str) orelse blk: {
+            std.log.err("Unknown indic syllabic category: {s}", .{isc_str});
+            if (!config.is_updating_ucd) {
+                unreachable;
+            } else {
+                break :blk .other;
+            }
+        };
+
+        var cp: u21 = range.start;
+        while (cp <= range.end) : (cp += 1) {
+            indic_syllabic_category[cp] = ipc;
+        }
+    }
+}
+
+const indic_syllabic_category_map = std.StaticStringMap(types.IndicSyllabicCategory).initComptime(.{
+    .{ "Other", .other },
+    .{ "Bindu", .bindu },
+    .{ "Visarga", .visarga },
+    .{ "Avagraha", .avagraha },
+    .{ "Nukta", .nukta },
+    .{ "Virama", .virama },
+    .{ "Pure_Killer", .pure_killer },
+    .{ "Reordering_Killer", .reordering_killer },
+    .{ "Invisible_Stacker", .invisible_stacker },
+    .{ "Vowel_Independent", .vowel_independent },
+    .{ "Vowel_Dependent", .vowel_dependent },
+    .{ "Vowel", .vowel },
+    .{ "Consonant_Placeholder", .consonant_placeholder },
+    .{ "Consonant", .consonant },
+    .{ "Consonant_Dead", .consonant_dead },
+    .{ "Consonant_With_Stacker", .consonant_with_stacker },
+    .{ "Consonant_Prefixed", .consonant_prefixed },
+    .{ "Consonant_Preceding_Repha", .consonant_preceding_repha },
+    .{ "Consonant_Initial_Postfixed", .consonant_initial_postfixed },
+    .{ "Consonant_Succeeding_Repha", .consonant_succeeding_repha },
+    .{ "Consonant_Subjoined", .consonant_subjoined },
+    .{ "Consonant_Medial", .consonant_medial },
+    .{ "Consonant_Final", .consonant_final },
+    .{ "Consonant_Head_Letter", .consonant_head_letter },
+    .{ "Modifying_Letter", .modifying_letter },
+    .{ "Tone_Letter", .tone_letter },
+    .{ "Tone_Mark", .tone_mark },
+    .{ "Gemination_Mark", .gemination_mark },
+    .{ "Cantillation_Mark", .cantillation_mark },
+    .{ "Register_Shifter", .register_shifter },
+    .{ "Syllable_Modifier", .syllable_modifier },
+    .{ "Consonant_Killer", .consonant_killer },
+    .{ "Non_Joiner", .non_joiner },
+    .{ "Joiner", .joiner },
+    .{ "Number_Joiner", .number_joiner },
+    .{ "Number", .number },
+    .{ "Brahmi_Joining_Number", .brahmi_joining_number },
 });
