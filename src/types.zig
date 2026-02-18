@@ -815,6 +815,25 @@ pub const JoiningGroup = enum(u7) {
     zhain,
 };
 
+pub const IndicPositionalCategory = enum(u4) {
+    not_applicable,
+    right,
+    left,
+    visual_order_left,
+    left_and_right,
+    top,
+    bottom,
+    top_and_bottom,
+    top_and_right,
+    top_and_left,
+    top_and_left_and_right,
+    bottom_and_right,
+    bottom_and_left,
+    top_and_bottom_and_right,
+    top_and_bottom_and_left,
+    overstruck,
+};
+
 // The following types are internal to `uucode`:
 
 pub fn Field(comptime c: config.Field, comptime packing: config.Table.Packing) type {
@@ -1237,7 +1256,7 @@ pub fn Slice(
                     try writer.print(
                         \\.{{
                         \\    .len = {},
-                        \\    .data = .{{ .shift = 
+                        \\    .data = .{{ .shift =
                     , .{self.len});
                     try self.data.shift.write(writer);
                     try writer.writeAll(

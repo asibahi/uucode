@@ -466,6 +466,7 @@ pub const tables = [_]config.Table{
             d.field("simple_lowercase_mapping"),
             d.field("original_grapheme_break"),
             d.field("indic_conjunct_break"),
+            d.field("indic_positional_category"),
         },
     },
     .{

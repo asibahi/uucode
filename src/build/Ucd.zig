@@ -25,6 +25,8 @@ scripts: []types.Script = undefined,
 joining_types: []types.JoiningType = undefined,
 joining_groups: []types.JoiningGroup = undefined,
 is_composition_exclusions: []bool = undefined,
+indic_positional_category: []types.IndicPositionalCategory = undefined,
+// indic_syllabic_category: []types.IndicSyllabicCategory = undefined,
 
 const Self = @This();
 
@@ -127,6 +129,7 @@ const field_to_sections = std.StaticStringMap([]const UcdSection).initComptime(.
     .{ "joining_type", &.{.joining_types} },
     .{ "joining_group", &.{.joining_groups} },
     .{ "is_composition_exclusion", &.{.is_composition_exclusions} },
+    .{ "indic_positional_category", &.{.indic_positional_category} },
 });
 
 fn fieldNeedsSection(comptime field: []const u8, comptime ucd_section: UcdSection) bool {
@@ -212,6 +215,11 @@ pub fn init(allocator: std.mem.Allocator, comptime table_configs: []const config
     if (comptime needsSectionAny(table_configs, .is_composition_exclusions)) {
         self.is_composition_exclusions = try allocator.alloc(bool, n);
         try parseCompositionExclusions(allocator, self.is_composition_exclusions);
+    }
+
+    if (comptime needsSectionAny(table_configs, .indic_positional_category)) {
+        self.indic_positional_category = try allocator.alloc(types.IndicPositionalCategory, n);
+        try parseIndicPositionalCategory(allocator, self.indic_positional_category);
     }
 
     const end = try std.time.Instant.now();
@@ -2035,3 +2043,62 @@ fn parseCompositionExclusions(
         }
     }
 }
+
+fn parseIndicPositionalCategory(
+    allocator: std.mem.Allocator,
+    indic_positional_category: []types.IndicPositionalCategory,
+) !void {
+    @memset(indic_positional_category, .not_applicable);
+
+    const file_path = "ucd/IndicPositionalCategory.txt";
+
+    const file = try std.fs.cwd().openFile(file_path, .{});
+    defer file.close();
+
+    const content = try file.readToEndAlloc(allocator, 1024 * 1024);
+    defer allocator.free(content);
+
+    var lines = std.mem.splitScalar(u8, content, '\n');
+    while (lines.next()) |line| {
+        const trimmed = trim(line);
+        if (trimmed.len == 0) continue;
+
+        var parts = std.mem.splitScalar(u8, trimmed, ';');
+        const cp_str = std.mem.trim(u8, parts.next().?, " \t\r");
+        const ipc_str = std.mem.trim(u8, parts.next().?, " \t\r");
+
+        const range = try parseRange(cp_str);
+        const ipc = indic_positional_category_map.get(ipc_str) orelse blk: {
+            std.log.err("Unknown indic positional category: {s}", .{ipc_str});
+            if (!config.is_updating_ucd) {
+                unreachable;
+            } else {
+                break :blk .not_applicable;
+            }
+        };
+
+        var cp: u21 = range.start;
+        while (cp <= range.end) : (cp += 1) {
+            indic_positional_category[cp] = ipc;
+        }
+    }
+}
+
+const indic_positional_category_map = std.StaticStringMap(types.IndicPositionalCategory).initComptime(.{
+    .{ "Not_Applicable", .not_applicable },
+    .{ "Right", .right },
+    .{ "Left", .left },
+    .{ "Visual_Order_Left", .visual_order_left },
+    .{ "Left_And_Right", .left_and_right },
+    .{ "Top", .top },
+    .{ "Bottom", .bottom },
+    .{ "Top_And_Bottom", .top_and_bottom },
+    .{ "Top_And_Right", .top_and_right },
+    .{ "Top_And_Left", .top_and_left },
+    .{ "Top_And_Left_And_Right", .top_and_left_and_right },
+    .{ "Bottom_And_Right", .bottom_and_right },
+    .{ "Bottom_And_Left", .bottom_and_left },
+    .{ "Top_And_Bottom_And_Right", .top_and_bottom_and_right },
+    .{ "Top_And_Bottom_And_Left", .top_and_bottom_and_left },
+    .{ "Overstruck", .overstruck },
+});
