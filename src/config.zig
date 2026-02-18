@@ -294,6 +294,12 @@ pub const default = Table{
 
         // Composition Exclusions
         .{ .name = "is_composition_exclusion", .type = bool },
+
+        // Indic Positional Category
+        .{ .name = "indic_positional_category", .type = types.IndicPositionalCategory },
+
+        // Indic Syllabic Category
+        .{ .name = "indic_syllabic_category", .type = types.IndicSyllabicCategory },
     },
 };
 
